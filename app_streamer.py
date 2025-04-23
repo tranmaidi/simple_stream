@@ -1,44 +1,46 @@
-import threading
+from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
+import av
 
-import cv2
-import streamlit as st
-from streamlit_webrtc import webrtc_streamer
+RTC_CONFIGURATION = RTCConfiguration(
+    {
+      "iceServers": [
+      {
+        "urls": ["stun:stun.relay.metered.ca:80"],
+      },
+      {
+        "urls": ["turn:global.relay.metered.ca:80"],
+        "username": "6d7b9ebe74cfcf3ff4d74844",
+        "credential": "0yaGxZVrCZFteYcX",
+      },
+      {
+        "urls": ["turn:global.relay.metered.ca:80?transport=tcp"],
+        "username": "6d7b9ebe74cfcf3ff4d74844",
+        "credential": "0yaGxZVrCZFteYcX",
+      },
+      {
+        "urls": ["turn:global.relay.metered.ca:443"],
+        "username": "6d7b9ebe74cfcf3ff4d74844",
+        "credential": "0yaGxZVrCZFteYcX",
+      },
+      {
+        "urls": ["turns:global.relay.metered.ca:443?transport=tcp"],
+        "username": "6d7b9ebe74cfcf3ff4d74844",
+        "credential": "0yaGxZVrCZFteYcX",
+      },
+      ]
+    }
+)
 
-st.set_page_config(page_title="webcam", layout= "wide")
-        
-col1, col2 = st.columns(2)
+class VideoProcessor:
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-lock = threading.Lock()
-img_container = {"img": None}
-
-
-def video_frame_callback(frame):
-    img = frame.to_ndarray(format="bgr24")
-    with lock:
-        img_container["img"] = img
-
-    return frame
-
-with col1:
-    ctx = webrtc_streamer(key="example",
-                          video_frame_callback=video_frame_callback,
-                          rtc_configuration={  # Add this config
-                            "iceServers": [{"urls": ["stun:stun.stunprotocol.org:3478"]
-                                            
-                                            }]
-                                            },
-                          media_stream_constraints={"video": True, "audio": False})
-
-
-imgout_place = col2.empty()
-
-while ctx.state.playing:
-    with lock:
-        img = img_container["img"]
-    if img is None:
-        continue
-    # phat hien khuon mat
-    # ket qua tra ve la imgout co dong khung
-    imgout = cv2.flip(img,0)
-
-    imgout_place.image(imgout, channels='BGR')
+webrtc_ctx = webrtc_streamer(
+    key="tmd",
+    mode=WebRtcMode.SENDRECV,
+    rtc_configuration=RTC_CONFIGURATION,
+    media_stream_constraints={"video": True, "audio": False},
+    video_processor_factory=VideoProcessor,
+    async_processing=True,
+)

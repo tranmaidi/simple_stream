@@ -1,4 +1,4 @@
-from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
+from streamlit_webrtc import webrtc_streamer
 import av
 
 RTC_CONFIGURATION = RTCConfiguration(
